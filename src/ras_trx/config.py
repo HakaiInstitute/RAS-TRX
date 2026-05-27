@@ -266,6 +266,8 @@ class ReferenceConfig(BaseModel):
 class TransformConfig(BaseModel):
     origin: ReferenceConfig
     destination: ReferenceConfig
+    use_vertical_transform: bool = True
+    representative_elevation: float = 0.0
 
     def to_csrspy(self) -> CSRSPYConfig:
         s = self.origin.to_csrspy()

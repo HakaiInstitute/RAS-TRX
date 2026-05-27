@@ -163,3 +163,42 @@ class TestTransformConfig:
         assert result.s_ref_frame == Reference.ITRF14
         assert result.t_ref_frame == Reference.NAD83CSRS
         assert result.t_vd == VerticalDatum.CGG2013A
+
+    def test_new_fields_default_correctly(self):
+        config = TransformConfig(
+            origin=ReferenceConfig(
+                ref_frame=TrxReference.ITRF14,
+                epoch=date(2010, 1, 1),
+                vd=TrxVd.GRS80,
+                coord_type=TrxCoordType.UTM10,
+            ),
+            destination=ReferenceConfig(
+                ref_frame=TrxReference.NAD83CSRS,
+                epoch=date(2010, 1, 1),
+                vd=TrxVd.GRS80,
+                coord_type=TrxCoordType.UTM10,
+            ),
+        )
+        assert config.use_vertical_transform is True
+        assert config.representative_elevation == 0.0
+
+    def test_2d_config_roundtrip(self):
+        config = TransformConfig(
+            origin=ReferenceConfig(
+                ref_frame=TrxReference.ITRF14,
+                epoch=date(2010, 1, 1),
+                vd=TrxVd.GRS80,
+                coord_type=TrxCoordType.UTM10,
+            ),
+            destination=ReferenceConfig(
+                ref_frame=TrxReference.NAD83CSRS,
+                epoch=date(2010, 1, 1),
+                vd=TrxVd.GRS80,
+                coord_type=TrxCoordType.UTM10,
+            ),
+            use_vertical_transform=False,
+            representative_elevation=42.5,
+        )
+        restored = TransformConfig.model_validate_json(config.model_dump_json())
+        assert restored.use_vertical_transform is False
+        assert restored.representative_elevation == pytest.approx(42.5)
