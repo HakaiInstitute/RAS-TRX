@@ -133,12 +133,13 @@ def transform_dem(
     transformer = CSRSTransformer(**config.to_csrspy().model_dump(exclude_none=True))
 
     with rasterio.open(input_file) as src:
-        # Update the profile for the output DEM
-        out_profile = transform_raster_profile(
-            src.profile, src.bounds, config.destination.crs
+        dest_crs = (
+            config.destination.crs
+            if config.use_vertical_transform
+            else config.destination.horizontal_crs
         )
+        out_profile = transform_raster_profile(src.profile, src.bounds, dest_crs)
 
-        # Ensure the output profile includes the nodata value
         if src.nodata is not None:
             out_profile.update(nodata=src.nodata)
 
@@ -147,39 +148,44 @@ def transform_dem(
                 in_data = src.read(window=window)
                 pixels_info = get_raster_points_and_values(src, window, in_data)
 
-                # Initialize output data for this block with the nodata value
                 out_data = np.full_like(
                     in_data, fill_value=src.nodata if src.nodata is not None else 0
                 )
 
-                # Prepare coordinates for transformation, filtering out nodata pixels
                 coords_to_transform = []
-                valid_pixel_indices = []  # Store indices to map transformed values back
+                valid_pixel_indices = []
 
                 for i, pixel_info in enumerate(pixels_info):
                     if not pixel_info["is_nodata"]:
+                        z = (
+                            pixel_info["z"]
+                            if config.use_vertical_transform
+                            else config.representative_elevation
+                        )
                         coords_to_transform.append((
                             pixel_info["x"],
                             pixel_info["y"],
-                            pixel_info["z"],
+                            z,
                         ))
                         valid_pixel_indices.append(i)
 
                 if coords_to_transform:
-                    # Perform transformation on all valid pixels in the block
                     transformed_coords = list(transformer(coords_to_transform))
 
-                    # Map transformed Z values back to their original positions in the output array
                     for idx_in_transformed, original_flat_index in enumerate(
                         valid_pixel_indices
                     ):
-                        transformed_z = transformed_coords[idx_in_transformed][2]
                         original_pixel_info = pixels_info[original_flat_index]
+                        out_val = (
+                            transformed_coords[idx_in_transformed][2]
+                            if config.use_vertical_transform
+                            else original_pixel_info["z"]
+                        )
                         out_data[
                             0,
                             original_pixel_info["row_in_block"],
                             original_pixel_info["col_in_block"],
-                        ] = transformed_z
+                        ] = out_val
 
                 dst.write(out_data, window=window)
 
