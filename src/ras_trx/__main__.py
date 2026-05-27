@@ -140,6 +140,9 @@ class MainWindow(QMainWindow):
         self.thread = None
 
         sync_missing_grid_files()
+        self.toggle_vertical_transform(
+            self.cw.checkBox_use_vertical_transform.isChecked()
+        )
 
     def save_config(self):
         # Get output file path
