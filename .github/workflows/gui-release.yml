@@ -87,7 +87,7 @@ jobs:
       - name: Build Windows GUI Executable
         if: ${{ runner.os == 'Windows' }}
         env:
-          TAG: ${{ env.tag }}
+          TAG: ${{ github.ref_name }}
         run: >
           uv run pyinstaller
           --onefile
@@ -98,7 +98,7 @@ jobs:
           --icon="src\ras_trx\resources\ras-trx.ico"
           --add-data="src\ras_trx\resources\ras-trx.ico;resources"
           --add-data="src\ras_trx\resources\*.ui;resources"
-          "--name=RAS-TRX-v${TAG}-win64.exe"
+          "--name=RAS-TRX-${TAG}-win64.exe"
           src/ras_trx/__main__.py
 
       - name: Archive release artifacts
