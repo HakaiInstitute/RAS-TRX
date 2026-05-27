@@ -6,6 +6,8 @@ on:
       - '**'
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+a[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+b[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+rc[0-9]+'
 
 permissions: { }
@@ -135,11 +137,19 @@ jobs:
           TAG: ${{ env.tag }}
         run: |
           prerelease_flag=""
-          if echo "$TAG" | grep -qe 'rc[0-9]'; then
+          title_suffix=""
+          if echo "$TAG" | grep -qE 'a[0-9]+$'; then
             prerelease_flag="--prerelease"
+            title_suffix=" (Alpha)"
+          elif echo "$TAG" | grep -qE 'b[0-9]+$'; then
+            prerelease_flag="--prerelease"
+            title_suffix=" (Beta)"
+          elif echo "$TAG" | grep -qE 'rc[0-9]+$'; then
+            prerelease_flag="--prerelease"
+            title_suffix=" (Release Candidate)"
           fi
           gh release create "v${TAG}" \
-            --title "v${TAG}" \
+            --title "v${TAG}${title_suffix}" \
             --draft \
             --generate-notes \
             $prerelease_flag \
