@@ -6,6 +6,8 @@ from datetime import date
 from multiprocessing import freeze_support
 from queue import Queue
 
+from csrspy.utils import sync_missing_grid_files
+from pydantic import ValidationError
 from PyQt6 import uic
 from PyQt6.QtCore import QThread, pyqtSignal as Signal
 from PyQt6.QtGui import QIcon, QKeySequence, QTextCursor
@@ -19,9 +21,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QWidget,
 )
-from pydantic import ValidationError
 
-from csrspy.utils import sync_missing_grid_files
 from ras_trx import __version__
 from ras_trx.config import (
     ReferenceConfig,
@@ -228,9 +228,12 @@ class MainWindow(QMainWindow):
     def update_vd_options(text, combo_box):
         combo_box.clear()
         if text == "NAD83(CSRS)":
-            combo_box.addItems(
-                ["GRS80", "CGVD2013/CGG2013a", "CGVD2013/CGG2013", "CGVD28/HT2_2010v70"]
-            )
+            combo_box.addItems([
+                "GRS80",
+                "CGVD2013/CGG2013a",
+                "CGVD2013/CGG2013",
+                "CGVD28/HT2_2010v70",
+            ])
         elif text == "WGS84":
             combo_box.addItems(["WGS84"])
         else:

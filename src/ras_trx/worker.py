@@ -6,14 +6,12 @@ from time import sleep
 
 import numpy as np
 import rasterio
+from csrspy import CSRSTransformer
 from PyQt6.QtCore import QThread, pyqtSignal as Signal
 
-from csrspy import CSRSTransformer
 from ras_trx.config import TransformConfig
+from ras_trx.dem_utils import get_raster_points_and_values, transform_raster_profile
 from ras_trx.logger import logger
-from ras_trx.dem_utils import transform_raster_profile, get_raster_points_and_values
-
-CHUNK_SIZE = 10_000
 
 
 class TransformWorker(QThread):
@@ -43,7 +41,6 @@ class TransformWorker(QThread):
         logger.info(f"Transform config: {self.config}")
         logger.info(f"Input CRS\n{self.config.origin.crs.to_wkt(pretty=True)}")
         logger.info(f"Output CRS\n{self.config.destination.crs.to_wkt(pretty=True)}")
-        logger.debug(f"Will process DEMs in chunk size of {CHUNK_SIZE}")
         logger.info("Calculating total number of iterations")
 
         num_workers = min(os.cpu_count(), 61)
@@ -161,9 +158,11 @@ def transform_dem(
 
                 for i, pixel_info in enumerate(pixels_info):
                     if not pixel_info["is_nodata"]:
-                        coords_to_transform.append(
-                            (pixel_info["x"], pixel_info["y"], pixel_info["z"])
-                        )
+                        coords_to_transform.append((
+                            pixel_info["x"],
+                            pixel_info["y"],
+                            pixel_info["z"],
+                        ))
                         valid_pixel_indices.append(i)
 
                 if coords_to_transform:

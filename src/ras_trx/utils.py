@@ -1,6 +1,7 @@
 import sys
+from collections.abc import Mapping
 from os import path
-from typing import Any, List, Mapping, Optional
+from typing import Any
 
 
 def resource_path(relative_path):
@@ -9,7 +10,7 @@ def resource_path(relative_path):
     return path.abspath(path.join(base_path, relative_path))
 
 
-def _get_available_versions() -> Optional[List[Mapping[str, Any]]]:
+def _get_available_versions() -> list[Mapping[str, Any]] | None:
     import requests
 
     headers = {
@@ -17,7 +18,9 @@ def _get_available_versions() -> Optional[List[Mapping[str, Any]]]:
         "X-GitHub-Api-Version": "2022-11-28",
     }
     r = requests.get(
-        "https://api.github.com/repos/HakaiInstitute/RAS-TRX/releases", headers=headers
+        "https://api.github.com/repos/HakaiInstitute/RAS-TRX/releases",
+        headers=headers,
+        timeout=10,
     )
     if r.status_code == requests.codes.ok:
         return list(
@@ -33,7 +36,7 @@ def _get_available_versions() -> Optional[List[Mapping[str, Any]]]:
         return None
 
 
-def get_upgrade_version(version) -> Optional[Mapping[str, str]]:
+def get_upgrade_version(version) -> Mapping[str, str] | None:
     available_versions = _get_available_versions()
     if available_versions is None or len(available_versions) == 0:
         # Error fetching versions, assume no upgrade available
