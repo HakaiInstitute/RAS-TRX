@@ -4,7 +4,7 @@ A desktop GUI application for converting raster DEM (Digital Elevation Model) co
 
 RAS-TRX is a raster-focused fork of [LAS-TRX](https://github.com/HakaiInstitute/LAS-TRX), extending its coordinate transformation capabilities to GeoTIFF raster files.
 
-**Developed by:** Santiago Gonzalez Arriola (Hakai Institute)  
+**Developed by:** Santiago Gonzalez Arriola (Hakai Institute)
 **Original LAS-TRX author:** Taylor Denouden (Hakai Institute)
 
 ---

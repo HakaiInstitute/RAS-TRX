@@ -30,14 +30,38 @@ ras-trx = "ras_trx.__main__:main"
 Repository = "https://github.com/HakaiInstitute/RAS-TRX"
 
 [dependency-groups]
-test = [
-    "pytest>=7.2.0,<8"
-]
 dev = [
     "ruff>=0.6.6,<0.7",
-    "pre-commit>=3.8.0,<4",
+    "prek>=0.4.3",
+    "zizmor>=1.25.2",
+    "pytest>=7.4.4",
+    "isort>=8.0.1",
+    "mypy>=2.1.0",
 ]
 
 [build-system]
 requires = ["uv_build>=0.11.16,<0.12"]
 build-backend = "uv_build"
+
+[tool.ruff]
+preview = true
+
+[tool.ruff.lint]
+extend-select = [
+    "I",
+    "N",
+    "Q",
+    "S",
+    "T",
+    "UP",
+    "NPY",
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = false
+warn_unused_configs = true
+strict = true
