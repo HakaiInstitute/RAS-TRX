@@ -106,8 +106,8 @@ class MainWindow(QMainWindow):
             self.cw.label_upgrade_link.hide()
         else:
             self.cw.label_upgrade_link.setText(
-                f"<a href=\"{upgrade_version['html_url']}\">"
-                "<span style=\"text-decoration: underline; color:rgb(153, 193, 241)\">"
+                f'<a href="{upgrade_version["html_url"]}">'
+                '<span style="text-decoration: underline; color:rgb(153, 193, 241)">'
                 f"New version available (v{upgrade_version['tag_name']})"
                 f"</span></a>"
             )
@@ -163,7 +163,7 @@ class MainWindow(QMainWindow):
         if path:
             # Load config from file
             logger.info(f"Loading config from {path}")
-            with open(path, "r") as f:
+            with open(path) as f:
                 config = f.read()
                 try:
                     self.transform_config = TransformConfig.model_validate_json(config)
@@ -374,7 +374,7 @@ class MainWindow(QMainWindow):
         self.thread.start()
 
 
-class LogWriteStream(object):
+class LogWriteStream:
     def __init__(self, queue_):
         super().__init__()
         self.queue = queue_

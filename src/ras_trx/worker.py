@@ -1,5 +1,3 @@
-import copy
-import math
 import multiprocessing
 import os
 from concurrent import futures
@@ -9,7 +7,6 @@ from time import sleep
 import numpy as np
 import rasterio
 from PyQt6.QtCore import QThread, pyqtSignal as Signal
-from pyproj import CRS
 
 from csrspy import CSRSTransformer
 from ras_trx.config import TransformConfig
@@ -140,7 +137,9 @@ def transform_dem(
 
     with rasterio.open(input_file) as src:
         # Update the profile for the output DEM
-        out_profile = transform_raster_profile(src.profile, src.bounds, config.destination.crs)
+        out_profile = transform_raster_profile(
+            src.profile, src.bounds, config.destination.crs
+        )
 
         # Ensure the output profile includes the nodata value
         if src.nodata is not None:
@@ -152,15 +151,19 @@ def transform_dem(
                 pixels_info = get_raster_points_and_values(src, window, in_data)
 
                 # Initialize output data for this block with the nodata value
-                out_data = np.full_like(in_data, fill_value=src.nodata if src.nodata is not None else 0)
+                out_data = np.full_like(
+                    in_data, fill_value=src.nodata if src.nodata is not None else 0
+                )
 
                 # Prepare coordinates for transformation, filtering out nodata pixels
                 coords_to_transform = []
-                valid_pixel_indices = [] # Store indices to map transformed values back
+                valid_pixel_indices = []  # Store indices to map transformed values back
 
                 for i, pixel_info in enumerate(pixels_info):
-                    if not pixel_info['is_nodata']:
-                        coords_to_transform.append((pixel_info['x'], pixel_info['y'], pixel_info['z']))
+                    if not pixel_info["is_nodata"]:
+                        coords_to_transform.append(
+                            (pixel_info["x"], pixel_info["y"], pixel_info["z"])
+                        )
                         valid_pixel_indices.append(i)
 
                 if coords_to_transform:
@@ -168,10 +171,16 @@ def transform_dem(
                     transformed_coords = list(transformer(coords_to_transform))
 
                     # Map transformed Z values back to their original positions in the output array
-                    for idx_in_transformed, original_flat_index in enumerate(valid_pixel_indices):
+                    for idx_in_transformed, original_flat_index in enumerate(
+                        valid_pixel_indices
+                    ):
                         transformed_z = transformed_coords[idx_in_transformed][2]
                         original_pixel_info = pixels_info[original_flat_index]
-                        out_data[0, original_pixel_info['row_in_block'], original_pixel_info['col_in_block']] = transformed_z
+                        out_data[
+                            0,
+                            original_pixel_info["row_in_block"],
+                            original_pixel_info["col_in_block"],
+                        ] = transformed_z
 
                 dst.write(out_data, window=window)
 

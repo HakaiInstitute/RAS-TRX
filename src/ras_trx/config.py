@@ -8,7 +8,6 @@ from pydantic import BaseModel
 from pyproj.crs import (
     CRS,
     CompoundCRS,
-    GeocentricCRS,
     GeographicCRS,
     ProjectedCRS,
     VerticalCRS,
