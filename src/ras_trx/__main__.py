@@ -399,7 +399,7 @@ class LogDisplayThread(QThread):
                 continue
 
 
-if __name__ == "__main__":
+def main():
     freeze_support()
 
     # Configure logging
@@ -445,3 +445,7 @@ if __name__ == "__main__":
     log_thread.start()
 
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()

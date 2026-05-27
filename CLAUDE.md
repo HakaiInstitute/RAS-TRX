@@ -9,8 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Repository**: https://github.com/HakaiInstitute/RAS-TRX
 - **Developer**: Santiago Gonzalez Arriola (santiago@hakai.org)
 - **Original LAS-TRX author**: Taylor Denouden (taylor.denouden@hakai.org)
-- **Language**: Python 3.9–3.11
-- **Build System**: Poetry
+- **Language**: Python 3.10+
+- **Build System**: uv
 
 ## Architecture Overview
 
@@ -76,31 +76,31 @@ The application is split into two main components:
 ### Install Dependencies
 
 ```bash
-poetry install
+uv sync
 ```
 
 ### Run the Application
 
 ```bash
-poetry run python -m ras_trx
+uv run ras-trx
 ```
 
 With debug mode and pre-populated fields:
 
 ```bash
-DEBUG=1 poetry run python -m ras_trx
+DEBUG=1 uv run ras-trx
 ```
 
 ### Run Tests
 
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
 Run a specific test:
 
 ```bash
-poetry run pytest tests/test_file.py::test_name -v
+uv run pytest tests/test_file.py::test_name -v
 ```
 
 ### Code Quality
@@ -108,14 +108,14 @@ poetry run pytest tests/test_file.py::test_name -v
 Format and lint code:
 
 ```bash
-poetry run ruff format .
-poetry run ruff check . --fix
+uv run ruff format .
+uv run ruff check . --fix
 ```
 
 Pre-commit hooks are configured in the project:
 
 ```bash
-poetry run pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 ## Important Implementation Details
@@ -153,10 +153,10 @@ The project uses PyInstaller for creating standalone executables:
 
 ```bash
 # Windows
-poetry run pyinstaller --onefile --windowed --icon=ras_trx/resources/ras-trx.ico --add-data "ras_trx/resources/ras-trx.ico;resources" --add-data "ras_trx/resources/mainwindow.ui;resources" --name RAS-TRX ras_trx/__main__.py
+uv run pyinstaller --onefile --windowed --icon=src/ras_trx/resources/ras-trx.ico --add-data "src/ras_trx/resources/ras-trx.ico;resources" --add-data "src/ras_trx/resources/mainwindow.ui;resources" --name RAS-TRX src/ras_trx/__main__.py
 
 # Linux
-poetry run pyinstaller --onefile --icon=ras_trx/resources/ras-trx.ico --add-data "ras_trx/resources/ras-trx.ico:resources" --add-data "ras_trx/resources/mainwindow.ui:resources" --name RAS-TRX ras_trx/__main__.py
+uv run pyinstaller --onefile --icon=src/ras_trx/resources/ras-trx.ico --add-data "src/ras_trx/resources/ras-trx.ico:resources" --add-data "src/ras_trx/resources/mainwindow.ui:resources" --name RAS-TRX src/ras_trx/__main__.py
 ```
 
 GUI resources (`.ui` files, icons) are embedded and resolved via `resource_path()` for both dev and packaged environments. `freeze_support()` is called in `__main__` for correct Windows multiprocessing behaviour in frozen executables.

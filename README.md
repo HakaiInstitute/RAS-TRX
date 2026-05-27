@@ -22,12 +22,12 @@ RAS-TRX is a raster-focused fork of [LAS-TRX](https://github.com/HakaiInstitute/
 
 ## Installation
 
-Requires Python 3.9–3.11 and [Poetry](https://python-poetry.org/).
+Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 git clone https://github.com/HakaiInstitute/RAS-TRX.git
 cd RAS-TRX
-poetry install
+uv sync
 ```
 
 On first run, the application will automatically download the required PROJ grid files for Canadian geodetic transformations (internet connection required, ~50 MB).
@@ -35,7 +35,13 @@ On first run, the application will automatically download the required PROJ grid
 ## Usage
 
 ```bash
-poetry run python -m ras_trx
+uv run ras-trx
+```
+
+If installed into your environment (e.g. via `uv tool install`), run directly:
+
+```bash
+ras-trx
 ```
 
 ### Batch Processing
@@ -54,14 +60,14 @@ C:\path\to\files\{}_transformed.tif
 
 ```bash
 # Run with debug mode (pre-populates fields)
-DEBUG=1 poetry run python -m ras_trx
+DEBUG=1 uv run ras-trx
 
 # Run tests
-poetry run pytest
+uv run pytest
 
 # Lint and format
-poetry run ruff format .
-poetry run ruff check . --fix
+uv run ruff format .
+uv run ruff check . --fix
 ```
 
 ## License
