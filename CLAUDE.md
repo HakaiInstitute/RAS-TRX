@@ -23,44 +23,26 @@ The application is split into two main components:
 
 ### Key Components
 
-- **`config.py`**: Configuration and enum classes defining coordinate systems, reference frames, and vertical datums
-  - `TrxReference`: Enum for reference frames (NAD83(CSRS), WGS84, ITRF series)
-  - `TrxVd`: Enum for vertical datums (WGS84, GRS80, CGVD2013, etc.)
-  - `TrxCoordType`: Enum for coordinate types (Geographic, UTM zones 3-23)
-  - `ReferenceConfig`: Configuration for a single reference frame including CRS construction
-  - `TransformConfig`: Complete source and destination configuration for transformations
-  - Provides conversion to csrspy configuration format for actual coordinate transformation
+- **`config.py`**: Enums and Pydantic models for coordinate systems. `TrxReference`, `TrxVd`, `TrxCoordType` map GUI values to csrspy enums. `ReferenceConfig` builds a `pyproj.CRS` (used for rasterio profile updates). `TransformConfig` serializes to `CSRSPYConfig` to drive the csrspy transformer.
 
-- **`worker.py`**: Multi-threaded DEM processing
-  - `TransformWorker`: QThread subclass that processes DEM files in parallel using ProcessPoolExecutor
-  - `transform_dem()`: Worker function that processes individual raster files using csrspy for coordinate transformation
-  - Handles block-windowed reading/writing for memory efficiency
-  - Filters nodata pixels before transformation
-  - Progress tracking via shared multiprocessing values
+- **`worker.py`**: `TransformWorker` (QThread) submits per-file `transform_dem()` calls to a `ProcessPoolExecutor`. **Critically: only Z values are transformed per-pixel** — csrspy is called to update elevation; horizontal reprojection is handled at the profile level by `transform_raster_profile()` in `dem_utils.py`.
 
-- **`dem_utils.py`**: Raster-specific utilities
-  - `transform_raster_profile()`: Updates rasterio profile for new CRS while maintaining spatial integrity
-  - `get_raster_points_and_values()`: Extracts (X, Y, Z) coordinates from raster blocks with nodata tracking
+- **`dem_utils.py`**: `transform_raster_profile()` uses `rasterio.warp.calculate_default_transform` to update the affine transform and dimensions for the new CRS. `get_raster_points_and_values()` iterates pixels within a block window to produce (X, Y, Z, nodata_flag) records.
 
-- **`logger.py`**: Global logger configuration
-
-- **`utils.py`**: Utility functions
-  - `resource_path()`: Resolves resource paths for both dev and PyInstaller bundled environments
-  - `get_upgrade_version()`: Checks GitHub releases for newer versions
+- **`utils.py`**: `resource_path()` resolves bundled resources under both dev (`src/`) and PyInstaller (`_MEIPASS`) environments.
 
 ### Data Flow
 
-1. User configures source and destination reference frames, epochs, vertical datums, and coordinate types in GUI
+1. User configures source/destination reference frames, epochs, vertical datums, and coordinate types in GUI
 2. User selects input DEM file(s) and output location (supports batch processing with wildcards)
-3. `TransformWorker` is spawned as separate thread
-4. Worker divides each DEM into raster blocks for memory efficiency
-5. For each block:
-   - Raster pixels are converted to (X, Y, Z) coordinates
-   - Nodata pixels are filtered out
-   - csrspy transformer performs coordinate transformation
-   - Results written back to output raster with updated profile
-6. Progress updates emitted to GUI during processing
-7. Multiple files processed in parallel using CPU thread pool
+3. `TransformWorker` is spawned as a separate QThread
+4. Worker pre-counts raster blocks across all files for progress tracking, then submits one future per file to a `ProcessPoolExecutor`
+5. For each raster block in `transform_dem()`:
+   - Pixels extracted as (X, Y, Z) coordinates; nodata pixels filtered out
+   - csrspy transformer updates Z (elevation) for all valid pixels
+   - Output raster profile uses the destination CRS with recalculated affine transform
+   - Z values written back; X/Y positions remain on the original grid
+6. GUI polls progress every 100ms via multiprocessing-safe shared `Value`
 
 ### External Dependencies
 
@@ -105,27 +87,30 @@ uv run pytest tests/test_file.py::test_name -v
 
 ### Code Quality
 
-Format and lint code:
-
 ```bash
 uv run ruff format .
 uv run ruff check . --fix
+uv run mypy src/
 ```
 
-Pre-commit hooks are configured in the project:
+Pre-commit hooks (uses `prek`):
 
 ```bash
-uv run pre-commit run --all-files
+uv run prek run --all-files
 ```
 
 ## Important Implementation Details
 
 ### CRS and Coordinate System Handling
 
-- The application uses `pyproj` to construct compound CRS objects combining horizontal (geographic/projected) and vertical (ellipsoidal/orthometric) components
-- Geographic CRS are converted to 3D when needed for Z components
-- UTM zones are dynamically constructed using `UTMConversion` with the specified zone and Northern hemisphere assumption
-- Vertical CRS are carefully handled: some are EPSG-defined (CGG2013, HT2_2010v70) while CGG2013a is defined via custom projjson
+- `pyproj` constructs compound CRS objects combining horizontal (geographic/projected) and vertical (ellipsoidal/orthometric) components
+- Geographic CRS are converted to 3D when no vertical CRS is specified (ellipsoidal height)
+- UTM zones are dynamically constructed using `UTMConversion` with Northern hemisphere assumption
+- `CGG2013a` has no EPSG code — it is defined via a custom projjson dict in `TrxVd.vertical_crs`
+
+### PROJ Grid Files
+
+On first run, `csrspy.utils.sync_missing_grid_files()` (called in `MainWindow.__init__`) downloads Canadian PROJ grids (~50 MB) to the user data directory. Subsequent runs use the cache. An internet connection is required on first launch.
 
 ### Nodata Handling
 
@@ -149,15 +134,14 @@ uv run pre-commit run --all-files
 
 ## Build and Distribution
 
-The project uses PyInstaller for creating standalone executables:
+The project uses PyInstaller for creating standalone executables. Use the provided script for local builds (it includes required `--collect-all` flags for rasterio/pyproj/numpy):
 
 ```bash
-# Windows
-uv run pyinstaller --onefile --windowed --icon=src/ras_trx/resources/ras-trx.ico --add-data "src/ras_trx/resources/ras-trx.ico;resources" --add-data "src/ras_trx/resources/mainwindow.ui;resources" --name RAS-TRX src/ras_trx/__main__.py
-
-# Linux
-uv run pyinstaller --onefile --icon=src/ras_trx/resources/ras-trx.ico --add-data "src/ras_trx/resources/ras-trx.ico:resources" --add-data "src/ras_trx/resources/mainwindow.ui:resources" --name RAS-TRX src/ras_trx/__main__.py
+# macOS/Linux
+bash scripts/build_local.sh
 ```
+
+For CI releases, see `.github/workflows/gui-release.yml`.
 
 GUI resources (`.ui` files, icons) are embedded and resolved via `resource_path()` for both dev and packaged environments. `freeze_support()` is called in `__main__` for correct Windows multiprocessing behaviour in frozen executables.
 
