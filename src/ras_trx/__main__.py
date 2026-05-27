@@ -268,7 +268,7 @@ class MainWindow(QMainWindow):
     def s_coords(self) -> TrxCoordType:
         out_type = self.cw.comboBox_input_coordinates.currentText()
         if out_type == "UTM":
-            return TrxCoordType.from_utm_zone(self.cw.spinBox_output_utm_zone.value())
+            return TrxCoordType.from_utm_zone(self.cw.spinBox_input_utm_zone.value())
         return TrxCoordType(out_type)
 
     @property
