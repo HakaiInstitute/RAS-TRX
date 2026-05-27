@@ -40,7 +40,12 @@ class TransformWorker(QThread):
         logger.info(f"Found {len(self.input_files)} input files")
         logger.info(f"Transform config: {self.config}")
         logger.info(f"Input CRS\n{self.config.origin.crs.to_wkt(pretty=True)}")
-        logger.info(f"Output CRS\n{self.config.destination.crs.to_wkt(pretty=True)}")
+        dest_crs_for_log = (
+            self.config.destination.crs
+            if self.config.use_vertical_transform
+            else self.config.destination.horizontal_crs
+        )
+        logger.info(f"Output CRS\n{dest_crs_for_log.to_wkt(pretty=True)}")
         logger.info("Calculating total number of iterations")
 
         num_workers = min(os.cpu_count(), 61)
