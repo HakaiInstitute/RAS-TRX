@@ -86,6 +86,7 @@ jobs:
 
       - name: Build Windows GUI Executable
         if: ${{ runner.os == 'Windows' }}
+        shell: bash
         env:
           TAG: ${{ env.tag }}
         run: >
