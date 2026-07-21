@@ -238,6 +238,22 @@ class ReferenceConfig(BaseModel):
 
         return xy_crs
 
+    @property
+    def horizontal_crs(self) -> CRS:
+        geodetic_crs = self.ref_frame.geodetic_crs
+
+        if self.coord_type == TrxCoordType.GEOG:
+            return geodetic_crs
+        elif self.coord_type.is_utm():
+            return ProjectedCRS(
+                name=f"{geodetic_crs.name} / UTM zone {self.coord_type.utm_zone}N",
+                conversion=UTMConversion(str(self.coord_type.utm_zone), hemisphere="N"),
+                geodetic_crs=geodetic_crs,
+                cartesian_cs=Cartesian2DCS(),
+            )
+        else:
+            raise IndexError(f"Could not create horizontal CRS for {self.coord_type}")
+
     def to_csrspy(self):
         return {
             "ref_frame": self.ref_frame.to_csrspy(),
@@ -250,6 +266,8 @@ class ReferenceConfig(BaseModel):
 class TransformConfig(BaseModel):
     origin: ReferenceConfig
     destination: ReferenceConfig
+    use_vertical_transform: bool = True
+    representative_elevation: float = 0.0
 
     def to_csrspy(self) -> CSRSPYConfig:
         s = self.origin.to_csrspy()
