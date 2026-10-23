@@ -116,6 +116,9 @@ class MainWindow(QMainWindow):
         self.cw.toolButton_input_file.clicked.connect(self.handle_select_input_file)
         self.cw.toolButton_output_file.clicked.connect(self.handle_select_output_file)
         self.cw.checkBox_epoch_trans.clicked.connect(self.enable_epoch_trans)
+        self.cw.checkBox_use_vertical_transform.clicked.connect(
+            self.toggle_vertical_transform
+        )
         self.cw.pushButton_convert.clicked.connect(self.convert)
         self.cw.comboBox_input_reference.currentTextChanged.connect(
             self.update_input_vd_options
@@ -137,6 +140,9 @@ class MainWindow(QMainWindow):
         self.thread = None
 
         sync_missing_grid_files()
+        self.toggle_vertical_transform(
+            self.cw.checkBox_use_vertical_transform.isChecked()
+        )
 
     def save_config(self):
         # Get output file path
@@ -217,6 +223,14 @@ class MainWindow(QMainWindow):
 
         if not checked:
             self.cw.dateEdit_output_epoch.setDate(self.cw.dateEdit_input_epoch.date())
+
+    def toggle_vertical_transform(self, checked: bool):
+        self.cw.comboBox_input_vertical_reference.setEnabled(checked)
+        self.cw.label_input_vertical_reference.setEnabled(checked)
+        self.cw.comboBox_output_vertical_reference.setEnabled(checked)
+        self.cw.label_output_vertical_reference.setEnabled(checked)
+        self.cw.doubleSpinBox_representative_elevation.setEnabled(not checked)
+        self.cw.label_representative_elevation.setEnabled(not checked)
 
     def activate_input_utm_zone_picker(self, text):
         self.cw.spinBox_input_utm_zone.setEnabled(text == "UTM")
@@ -300,7 +314,12 @@ class MainWindow(QMainWindow):
             vd=self.t_vd,
             coord_type=self.t_coords,
         )
-        return TransformConfig(origin=origin, destination=destination)
+        return TransformConfig(
+            origin=origin,
+            destination=destination,
+            use_vertical_transform=self.cw.checkBox_use_vertical_transform.isChecked(),
+            representative_elevation=self.cw.doubleSpinBox_representative_elevation.value(),
+        )
 
     @transform_config.setter
     def transform_config(self, config: TransformConfig):
@@ -331,6 +350,14 @@ class MainWindow(QMainWindow):
         self.cw.comboBox_output_vertical_reference.setCurrentText(
             config.destination.vd.value
         )
+
+        self.cw.checkBox_use_vertical_transform.setChecked(
+            config.use_vertical_transform
+        )
+        self.cw.doubleSpinBox_representative_elevation.setValue(
+            config.representative_elevation
+        )
+        self.toggle_vertical_transform(config.use_vertical_transform)
 
         if config.origin.epoch != config.destination.epoch:
             self.cw.checkBox_epoch_trans.setChecked(True)

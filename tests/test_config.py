@@ -122,6 +122,25 @@ class TestReferenceConfig:
         crs = self._config(coord=TrxCoordType.UTM10, vd=TrxVd.CGG2013).crs
         assert isinstance(crs, CompoundCRS)
 
+    def test_horizontal_crs_geographic_is_not_3d(self):
+        crs = self._config().horizontal_crs
+        assert crs.is_geographic
+        assert len(crs.axis_info) == 2
+
+    def test_horizontal_crs_with_vertical_datum_is_not_compound(self):
+        crs = self._config(vd=TrxVd.CGG2013).horizontal_crs
+        assert not isinstance(crs, CompoundCRS)
+
+    def test_horizontal_crs_utm_is_projected(self):
+        crs = self._config(coord=TrxCoordType.UTM10).horizontal_crs
+        assert crs.is_projected
+        assert not isinstance(crs, CompoundCRS)
+
+    def test_horizontal_crs_utm_with_vertical_datum_is_not_compound(self):
+        crs = self._config(coord=TrxCoordType.UTM10, vd=TrxVd.CGG2013).horizontal_crs
+        assert crs.is_projected
+        assert not isinstance(crs, CompoundCRS)
+
 
 class TestTransformConfig:
     def test_to_csrspy_returns_correct_type(self):
@@ -144,3 +163,42 @@ class TestTransformConfig:
         assert result.s_ref_frame == Reference.ITRF14
         assert result.t_ref_frame == Reference.NAD83CSRS
         assert result.t_vd == VerticalDatum.CGG2013A
+
+    def test_new_fields_default_correctly(self):
+        config = TransformConfig(
+            origin=ReferenceConfig(
+                ref_frame=TrxReference.ITRF14,
+                epoch=date(2010, 1, 1),
+                vd=TrxVd.GRS80,
+                coord_type=TrxCoordType.UTM10,
+            ),
+            destination=ReferenceConfig(
+                ref_frame=TrxReference.NAD83CSRS,
+                epoch=date(2010, 1, 1),
+                vd=TrxVd.GRS80,
+                coord_type=TrxCoordType.UTM10,
+            ),
+        )
+        assert config.use_vertical_transform is True
+        assert config.representative_elevation == 0.0
+
+    def test_2d_config_roundtrip(self):
+        config = TransformConfig(
+            origin=ReferenceConfig(
+                ref_frame=TrxReference.ITRF14,
+                epoch=date(2010, 1, 1),
+                vd=TrxVd.GRS80,
+                coord_type=TrxCoordType.UTM10,
+            ),
+            destination=ReferenceConfig(
+                ref_frame=TrxReference.NAD83CSRS,
+                epoch=date(2010, 1, 1),
+                vd=TrxVd.GRS80,
+                coord_type=TrxCoordType.UTM10,
+            ),
+            use_vertical_transform=False,
+            representative_elevation=42.5,
+        )
+        restored = TransformConfig.model_validate_json(config.model_dump_json())
+        assert restored.use_vertical_transform is False
+        assert restored.representative_elevation == pytest.approx(42.5)
